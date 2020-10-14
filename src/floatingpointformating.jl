@@ -1,3 +1,4 @@
+#TODO: rational
 function sci(val, precision, capitals::Bool)
     if isinf(val) || isnan(val)
         format_inf_nan(val, capitals)
@@ -49,32 +50,41 @@ function floatingpoint(val, precision::Integer, capitals::Bool)
         return format_inf_nan(val, capitals)
     end
 
-    digits = convert(BigInt, round(val*exp10(big(precision))))
+    r = Rational{BigInt}(val)
+
+    exp = convert(Int, floor(log10(val)))
+    power = convert(Int, floor(log2(r.den)))
+
+    digits = r.num*big(5)^power
+
+    len_digits = length(string(digits))
+    #round
+    digits = div(digits, big(10)^max(len_digits-exp-precision-1, 0), RoundNearest)
     sdigits = string(digits)
+    sdigits *= '0'^max(0, precision + exp + 1 - length(sdigits))
 
     decimalpart =
         if precision <= 0
             ""
         else
-            if length(sdigits) <= precision
-                "." * '0'^(precision-length(sdigits)) * sdigits
+            if exp < 0
+                "." * '0'^min(-exp-1, precision) * sdigits
             else
-                mid = length(sdigits) - precision
-                "." * sdigits[(mid+1):end]
+                "." * sdigits[(exp+2):end]
             end
         end
 
     integerpart =
-        if length(sdigits) <= precision
+        if exp < 0
             "0"
         else
-            mid = length(sdigits) - precision
-            sdigits[1:mid]
+            sdigits[1:exp+1]
         end
 
     return integerpart * decimalpart
 end
 
+#TODO: rational
 function generalformat(val, precision::Integer, capitals::Bool, mindigits::Bool=false)
     if isinf(val) || isnan(val)
         return format_inf_nan(val, capitals)
