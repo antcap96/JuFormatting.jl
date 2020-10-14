@@ -100,7 +100,7 @@ function parse_format_number(fmtstr::AbstractString, defaulttype::FormatType, va
     if(m.offset != 1)
         error("\"$(fmtstr)\" is not understood")
     end
-    #TODO: type check depend on type
+
     if(!occursin(m.captures[9], validtypes))
         error("unkown type: \"$(m.captures[9])\" for $type")
     end
