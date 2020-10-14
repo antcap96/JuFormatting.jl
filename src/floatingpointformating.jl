@@ -1,5 +1,7 @@
-function sci(val, precision, letter="e")
-    #TODO: Inf and NaN
+function sci(val, precision, capitals::Bool)
+    if isinf(val) || isnan(val)
+        format_inf_nan(val, capitals)
+    end
 
     # Calculate the exponent
     exp = Int(floor(log10(val)))
@@ -38,17 +40,13 @@ function sci(val, precision, letter="e")
     end
 
     # The final result
+    letter = capitals ? "E" : "e"
     return string(val) * letter * esign * exp
 end
 
 function floatingpoint(val, precision::Integer, capitals::Bool)
-    if val == Inf || val == NaN
-        ans = string(val) #NOTE: diferent from python where inf and nan are lowercase
-        if capitals
-            return uppercase(ans)
-        else
-            return ans
-        end
+    if isinf(val) || isnan(val)
+        return format_inf_nan(val, capitals)
     end
 
     digits = convert(BigInt, round(val*exp10(big(precision))))
@@ -78,11 +76,13 @@ function floatingpoint(val, precision::Integer, capitals::Bool)
 end
 
 function generalformat(val, precision::Integer, capitals::Bool, mindigits::Bool=false)
-    #TODO: Inf, NaN and capitals
+    if isinf(val) || isnan(val)
+        return format_inf_nan(val, capitals)
+    end
 
     exp = Int(floor(log10(val)))
     if exp >= precision - (mindigits ? 1 : 0) || exp <= -5
-        return sci(val, precision-1, capitals ? "E" : "e")
+        return sci(val, precision-1, capitals)
     end
 
     fractional_digits = precision-exp-1
@@ -104,5 +104,14 @@ function generalformat(val, precision::Integer, capitals::Bool, mindigits::Bool=
         end
     else
         return number
+    end
+end
+
+function format_inf_nan(val, capitals)
+    ans = string(val) #NOTE: diferent from python where inf and nan are lowercase
+    if capitals
+        return uppercase(ans)
+    else
+        return ans
     end
 end

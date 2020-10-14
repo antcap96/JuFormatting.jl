@@ -180,15 +180,14 @@ function format_sign(sign, signfmt)
 end
 
 function format_number(number, precision, type, hash::Bool)
-    @show hash
     # floating point representations
     if type == T_e
-        return sci(number, precision, "e")
+        return sci(number, precision, false)
     elseif type == T_E
-        return sci(number, precision, "E")
+        return sci(number, precision, true)
     elseif type == T_f
         return floatingpoint(number, precision, false)
-    elseif type == T_float
+    elseif type == T_F
         return floatingpoint(number, precision, true)
     elseif type == T_percent
         return floatingpoint(number*100, precision, false) * "%"
