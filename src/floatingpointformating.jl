@@ -13,7 +13,7 @@ function sci(val, precision, capitals::Bool)
     # If the value is exactly an integer, then we don't want to
     # print *any* decimal digits, regardless of precision
     if val == floor(val)
-        #val = Int(val)
+        val = Int(val)
     else
         # Otherwise, round it based on precision
         val = round(val, digits=precision)
@@ -50,18 +50,8 @@ function floatingpoint(val, precision::Integer, capitals::Bool)
         return format_inf_nan(val, capitals)
     end
 
-    r = Rational{BigInt}(val)
-
-    exp = convert(Int, floor(log10(val)))
-    power = convert(Int, floor(log2(r.den)))
-
-    digits = r.num*big(5)^power
-
-    len_digits = length(string(digits))
-    #round
-    digits = div(digits, big(10)^max(len_digits-exp-precision-1, 0), RoundNearest)
-    sdigits = string(digits)
-    sdigits *= '0'^max(0, precision + exp + 1 - length(sdigits))
+    exp = Int(floor(log10(val)))
+    sdigits = getndigits(val, max(0, precision + exp + 1))
 
     decimalpart =
         if precision <= 0
@@ -124,4 +114,24 @@ function format_inf_nan(val, capitals)
     else
         return ans
     end
+end
+
+function getndigits(val, ndigits)
+    r = Rational{BigInt}(val)
+    
+    if ndigits == 0
+        return ""
+    end
+
+    exp = convert(Int, floor(log10(val)))
+    power = convert(Int, floor(log2(r.den)))
+
+    digits = r.num*big(5)^power
+
+    len_digits = length(string(digits))
+
+    #round and add 0 to fill the precision
+    digits = div(digits, big(10)^max(len_digits - ndigits, 0), RoundNearest)
+    sdigits = string(digits)
+    sdigits *= '0'^(ndigits - length(sdigits))
 end
