@@ -84,10 +84,10 @@ fmt(fmtstr::AbstractString, x) = string(x)
 """
 function parse_format end
 
-parse_format(fmtstr::AbstractString, ::Integer) = parse_format_number(fmtstr, T_d)
-parse_format(fmtstr::AbstractString, ::AbstractFloat) = parse_format_number(fmtstr, T_float)
+parse_format(fmtstr::AbstractString, ::T) where {T<:Integer} = parse_format_number(fmtstr, T_d, "bcdoxXneEfFgGn%", T)
+parse_format(fmtstr::AbstractString, ::T) where {T<:AbstractFloat} = parse_format_number(fmtstr, T_float, "neEfFgGn%", T)
 
-function parse_format_number(fmtstr::AbstractString, defaulttype::FormatType)
+function parse_format_number(fmtstr::AbstractString, defaulttype::FormatType, validtypes::String, type)
     rgx = r"((?<fill>.?)(?<align>[<>=^]))?(?<sign>[+\- ]?)(?<hash>#?)(?<zero>0?)(?<width>[0-9]*)(?<precision>\.[0-9]+)?(?<type>.?)"
 
     m = match(rgx, fmtstr)
@@ -98,11 +98,11 @@ function parse_format_number(fmtstr::AbstractString, defaulttype::FormatType)
     end
 
     if(m.offset != 1)
-        error("\"$(fmtstr[1:m.offset])\" is not understood in format at index 1")
+        error("\"$(fmtstr)\" is not understood")
     end
     #TODO: type check depend on type
-    if(!occursin(m.captures[9], "bcdoxXneEfFgGn%"))
-        error("unkown type: \"$(m.captures[9])\"")
+    if(!occursin(m.captures[9], validtypes))
+        error("unkown type: \"$(m.captures[9])\" for $type")
     end
 
     if(length(m.match) != length(fmtstr))
@@ -129,6 +129,8 @@ function parse_format_number(fmtstr::AbstractString, defaulttype::FormatType)
     end
     if m.captures[8] === nothing
         precision = -1
+    elseif m.captures[8] == "."
+        error("format specifier missing precision: \"$fmtstr\" ")
     else
         precision = parse(Int, m.captures[8][2:end])
     end
@@ -181,25 +183,28 @@ end
 
 function format_number(number, precision, type, hash::Bool)
     # floating point representations
+    fprecision = precision >= 0 ? precision : 6
     if type == T_e
-        return sci(number, precision, false)
+        return sci(number, fprecision, false)
     elseif type == T_E
-        return sci(number, precision, true)
+        return sci(number, fprecision, true)
     elseif type == T_f
-        return floatingpoint(number, precision, false)
+        return floatingpoint(number, fprecision, false)
     elseif type == T_F
-        return floatingpoint(number, precision, true)
+        return floatingpoint(number, fprecision, true)
     elseif type == T_percent
-        return floatingpoint(number*100, precision, false) * "%"
+        return floatingpoint(number*100, fprecision, false) * "%"
     elseif type == T_g
-        return generalformat(number, precision, false)
+        return generalformat(number, fprecision, false)
     elseif type == T_G
-        return generalformat(number, precision, true)
+        return generalformat(number, fprecision, true)
     elseif type == T_float
-        return generalformat(number, precision, false, true)
+        return generalformat(number, fprecision, false, true)
     end
     # integer representations
-    #TODO: precision check
+    if precision != -1
+        error("precision not allowed in integer format specifier")
+    end
     if type == T_b
         return format_integer(number, _Bin(), hash)
     elseif type == T_o
