@@ -1,5 +1,3 @@
-#TODO: error on empty argument
-
 macro f_str(str)
     inbetweens = String[]
     arguments  = String[]
