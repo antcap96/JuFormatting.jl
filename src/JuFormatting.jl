@@ -3,16 +3,11 @@ module JuFormatting
 # Write your package code here.
 
 export
-    test
+    format
 
-
-"""
-    test(x)
-
-returns 2 * `x`
-"""
-function test(x)
-    return 2 * x
-end
+include("main.jl")
+include("numberformatparser.jl")
+include("floatingpointformating.jl")
+include("integerformating.jl")
 
 end
