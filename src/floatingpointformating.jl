@@ -1,4 +1,3 @@
-#TODO: rational
 function sci(val, precision, capitals::Bool)
     if isinf(val) || isnan(val)
         format_inf_nan(val, capitals)
@@ -7,23 +6,10 @@ function sci(val, precision, capitals::Bool)
     # Calculate the exponent
     exp = Int(floor(log10(val)))
 
-    # Normalize the value
-    val *= exp10(-exp)
+    rounded, digits = getndigits(val, precision+1, false)
 
-    # If the value is exactly an integer, then we don't want to
-    # print *any* decimal digits, regardless of precision
-    if val == floor(val)
-        val = Int(val)
-    else
-        # Otherwise, round it based on precision
-        val = round(val, digits=precision)
-        # The rounding operation might have increased the
-        # number to where it is no longer normalized, if so
-        # then adjust the exponent.
-        if val >= 10.0
-            exp += 1
-            val = val * 0.1
-        end
+    if rounded
+        exp += 1
     end
 
     # Convert the exponent to a string using only str().
@@ -42,7 +28,15 @@ function sci(val, precision, capitals::Bool)
 
     # The final result
     letter = capitals ? "E" : "e"
-    return string(val) * letter * esign * exp
+
+    number =
+        if length(digits) == 1
+            digits
+        else
+            digits[1] * "." * digits[2:end]
+        end
+
+    return number * letter * esign * exp
 end
 
 function floatingpoint(val, precision::Integer, capitals::Bool)
@@ -51,7 +45,11 @@ function floatingpoint(val, precision::Integer, capitals::Bool)
     end
 
     exp = Int(floor(log10(val)))
-    sdigits = getndigits(val, max(0, precision + exp + 1))
+    (rounded, sdigits) = getndigits(val, max(0, precision + exp + 1), true)
+
+    if rounded
+        exp += 1
+    end
 
     decimalpart =
         if precision <= 0
@@ -74,19 +72,26 @@ function floatingpoint(val, precision::Integer, capitals::Bool)
     return integerpart * decimalpart
 end
 
-#TODO: rational
-function generalformat(val, precision::Integer, capitals::Bool, mindigits::Bool=false)
+function generalformat(val, precision::Integer, capitals::Bool, min_digits::Bool=false)
     if isinf(val) || isnan(val)
         return format_inf_nan(val, capitals)
     end
 
+    precision = max(precision, 1) #in generalformatting, precision is ≥ 1
+
     exp = Int(floor(log10(val)))
-    if exp >= precision - (mindigits ? 1 : 0) || exp <= -5
+    rounded , _ = getndigits(val, precision, true)
+
+    if rounded
+        exp += 1
+    end
+
+    if exp >= precision - (min_digits ? 1 : 0) || exp <= -5
         return sci(val, precision-1, capitals)
     end
 
     fractional_digits = precision-exp-1
-    if mindigits
+    if min_digits
         fractional_digits = max(fractional_digits, 1)
     end
 
@@ -97,7 +102,7 @@ function generalformat(val, precision::Integer, capitals::Bool, mindigits::Bool=
     end
 
     if number[end] == '.'
-        if mindigits
+        if min_digits
             return number * '0'
         else
             return number[1:end-1]
@@ -116,9 +121,12 @@ function format_inf_nan(val, capitals)
     end
 end
 
-function getndigits(val, ndigits)
+"""
+return a tuple with if rounding occoured and the first ndigits in the representation of val
+"""
+function getndigits(val, ndigits, keep_rounded::Bool)
     r = Rational{BigInt}(val)
-    
+
     if ndigits == 0
         return ""
     end
@@ -133,5 +141,15 @@ function getndigits(val, ndigits)
     #round and add 0 to fill the precision
     digits = div(digits, big(10)^max(len_digits - ndigits, 0), RoundNearest)
     sdigits = string(digits)
-    sdigits *= '0'^(ndigits - length(sdigits))
+
+    if length(sdigits) == ndigits+1
+        @assert sdigits[end] == '0'
+        if keep_rounded
+            return (true, sdigits)
+        else
+            return (true, sdigits[1:end-1])
+        end
+    else
+        return (false, sdigits * '0'^(ndigits - length(sdigits)))
+    end
 end
