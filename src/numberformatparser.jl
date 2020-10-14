@@ -154,8 +154,7 @@ end
 function spec_format(fmt::FormatSpecNumber, x::Number)
     sign, number = separate_sign(x)
 
-    sign = format_sign(sign, fmt.sign)
-
+    sign   = format_sign(sign, fmt.sign)
     number = format_number(number, fmt.precision, fmt.type, fmt.hash)
 
     combine(sign, number, fmt.fill, fmt.width, fmt.align)
