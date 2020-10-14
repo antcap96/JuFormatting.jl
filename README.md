@@ -11,11 +11,11 @@ The JuFormatting package provides the usefull formatting syntax from python in b
 ## Example
 
 ```julia
-    julia> format("{:#b}", 3)
-    "0b11"
+julia> format("{:#b}", 3)
+"0b11"
 
-    julia> f"{31.32:10.3g}"
-    "      31.3"
+julia> f"{31.32:10.3g}"
+"      31.3"
 ```
 
 ## Diferences from python / todos
