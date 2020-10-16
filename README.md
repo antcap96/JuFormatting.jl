@@ -62,8 +62,8 @@ Diferences from python / todos
 [appvey-img]: https://ci.appveyor.com/api/projects/status/github/antcap96/JuFormatting.jl?svg=true
 [appvey-url]: https://ci.appveyor.com/project/antcap96/JuFormatting-jl
 
-[coveral-img]: https://coveralls.io/repos/github/antcap96/JuFormatting.jl/badge.svg?branch=master
-[coveral-url]: https://coveralls.io/github/antcap96/JuFormatting.jl?branch=master
+[coveral-img]: https://coveralls.io/repos/github/antcap96/JuFormatting.jl/badge.svg
+[coveral-url]: https://coveralls.io/github/antcap96/JuFormatting.jl
 
 [codecov-img]: https://codecov.io/gh/antcap96/JuFormatting.jl/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/antcap96/JuFormatting.jl
