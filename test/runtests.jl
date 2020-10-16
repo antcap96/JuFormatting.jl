@@ -36,4 +36,8 @@ end
     @test test("{: ^ 10} {{", rand(1:500))
     @test test("{:+015x}", rand(1:500))
 
+    # @f_str tests
+    @test f"{0.:.0}" == "0.0"
+    @test f"{0.:.0g}" == "0"
+
 end
