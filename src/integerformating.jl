@@ -1,5 +1,5 @@
 ### print integers
-# Credit Formatting.jl (https://github.com/JuliaIO/Formatting.jl)
+# Some credit to Formatting.jl (https://github.com/JuliaIO/Formatting.jl)
 
 struct _Dec end
 struct _Oct end
@@ -16,16 +16,6 @@ _div(x::Integer, ::_Dec) = div(x, 10)
 _div(x::Integer, ::_Bin) = x >> 1
 _div(x::Integer, ::_Oct) = x >> 3
 _div(x::Integer, ::Union{_Hex, _HEX}) = x >> 4
-
-function _ndigits(x::Integer, op)  # suppose x is non-negative
-    m = 1
-    q = _div(x, op)
-    while q > 0
-        m += 1
-        q = _div(q, op)
-    end
-    return m
-end
 
 _ipre(op) = ""
 _ipre(::_Hex) = "0x"
@@ -62,8 +52,4 @@ function format_integer(val, op, hash::Bool)
         b = _div(b, op)
     end
     return result
-end
-
-function format_char(val)
-    return string(Char(val))
 end

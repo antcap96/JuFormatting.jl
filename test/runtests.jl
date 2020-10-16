@@ -24,8 +24,8 @@ end
     @test test("{:f} {:g} {:e} {}", zeros(4))
 
     # integer representations
-    @test test("{:#X} {:#x} {:#o} {:#b}", rand(1:100, 4))
-    @test test("{:X} {:x} {:o} {:b}", rand(1:100, 4))
+    @test test("{:#X} {:#x} {:#o} {:#b} {:#d}", rand(1:100, 5))
+    @test test("{:X} {:x} {:o} {:b} {:d}", rand(1:100, 5))
 
     # rounding
     @test test("{:.1f}", 0.99)
