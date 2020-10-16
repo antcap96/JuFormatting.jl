@@ -44,8 +44,6 @@ Diferences from python / todos
 
 * the "n" and "," formating type is not implemented for Integers nor floats.
 
-* Inf and NaN are formated diferently from python to match julia default conversion to string of these values.
-
 * getattr and getindex are not yet supported in the format syntax
 
 * replacement fields in format specifiers are not yet supported
@@ -54,7 +52,9 @@ Diferences from python / todos
 
 * julia offers more numeric types than python, currently all abstract floats are handled the same and so do all integers.
 
+* `Inf` and `NaN` are formated diferently from python to match julia default conversion to string of these values.
 
+* julia starts using the exponent notation for floats at 1e6 while python only starts using this notation at 1e15, so an empty format `"{}"` will give diferent results from python
 
 [travis-img]: https://travis-ci.com/antcap96/JuFormatting.jl.svg?branch=master
 [travis-url]: https://travis-ci.com/antcap96/JuFormatting.jl
