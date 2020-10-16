@@ -8,7 +8,7 @@
 
 ![logo](logo/logo.svg "JuFormatting.jl")
 
-The JuFormatting package provides the usefull formatting syntax from python in both a function form and a f-string using the @f_str macro. The JuFormatting library is fully written in julia and works for versions greater or equal to julia 1.2.
+The JuFormatting package provides the usefull formatting syntax from python in both a function form and a f-string using the @f_str macro. The JuFormatting library is fully written in julia and works for versions greater or equal to julia 1.3.
 
 Installation
 ------------
