@@ -3,14 +3,11 @@ function sci(val, precision, capitals::Bool)
         return format_inf_nan(val, capitals)
     end
 
-    # Calculate the exponent
-    exp = Int(floor(log10(val)))
-
-    rounded, digits = getndigits(val, precision+1, false)
-
-    if rounded
-        exp += 1
+    if val == 0
+        return sci_zero(precision, capitals)
     end
+
+    exp, digits = getndigits(val, precision+1)
 
     # Convert the exponent to a string using only str().
     # The existing C printf always prints at least 2 digits.
@@ -39,17 +36,21 @@ function sci(val, precision, capitals::Bool)
     return number * letter * esign * exp
 end
 
+function sci_zero(precision, capitals::Bool)
+    return floatingpoint_zero(precision) * (capitals ? "E" : "e") * "+00"
+end
+
+
 function floatingpoint(val, precision::Integer, capitals::Bool)
     if isinf(val) || isnan(val)
         return format_inf_nan(val, capitals)
     end
 
-    exp = Int(floor(log10(val)))
-    (rounded, sdigits) = getndigits(val, max(0, precision + exp + 1), true)
-
-    if rounded
-        exp += 1
+    if val == 0
+        return floatingpoint_zero(precision)
     end
+
+    (exp, sdigits) = getnfractionaldigits(val, precision)
 
     decimalpart =
         if precision <= 0
@@ -72,30 +73,43 @@ function floatingpoint(val, precision::Integer, capitals::Bool)
     return integerpart * decimalpart
 end
 
+function floatingpoint_zero(precision)
+    if precision == 0
+        return "0"
+    else
+        return "0." * '0'^precision
+    end
+end
+
 function generalformat(val, precision::Integer, capitals::Bool, min_digits::Bool=false)
     if isinf(val) || isnan(val)
         return format_inf_nan(val, capitals)
     end
 
+    if val == 0
+        if min_digits
+            return "0.0"
+        else
+            return "0"
+        end
+    end
+
     precision = max(precision, 1) #in generalformatting, precision is ≥ 1
 
-    exp = Int(floor(log10(val)))
-    rounded , _ = getndigits(val, precision, true)
+    exp , _ = getndigits(val, precision)
 
-    if rounded
-        exp += 1
-    end
-
+    exponent = ""
     if exp >= precision - (min_digits ? 1 : 0) || exp <= -5
-        return sci(val, precision-1, capitals)
-    end
+        fractional_digits = precision-1
 
-    fractional_digits = precision-exp-1
-    if min_digits
-        fractional_digits = max(fractional_digits, 1)
-    end
+        number = sci(val, fractional_digits, capitals)
+        i = findfirst(capitals ? 'E' : 'e', number)
+        number, exponent = number[1:i-1], number[i:end]
+    else
+        fractional_digits = max(precision-exp-1, min_digits ? 1 : 0)
 
-    number = floatingpoint(val, fractional_digits, capitals)
+        number = floatingpoint(val, fractional_digits, capitals)
+    end
 
     if fractional_digits > 0
         number = rstrip(number, ['0'])
@@ -103,13 +117,13 @@ function generalformat(val, precision::Integer, capitals::Bool, min_digits::Bool
 
     if number[end] == '.'
         if min_digits
-            return number * '0'
+            number *= '0'
         else
-            return number[1:end-1]
+            number =  number[1:end-1]
         end
-    else
-        return number
     end
+
+    number * exponent
 end
 
 function format_inf_nan(val, capitals)
@@ -122,14 +136,38 @@ function format_inf_nan(val, capitals)
 end
 
 """
-return a tuple with if rounding occoured and the first ndigits in the representation of val
+get the first `n` digits in base 10 representation of `val` rounded to `n`
+digits precision and calculate largest power of 10 that is less or equal to the
+rounded number
 """
-function getndigits(val, ndigits, keep_rounded::Bool)
-    r = Rational{BigInt}(val)
+function getndigits(val, n)
+    @assert(n>0)
 
-    if ndigits == 0
-        return ""
+    r = Rational{BigInt}(val)
+    power = convert(Int, floor(log2(r.den)))
+    digits = r.num*big(5)^power
+
+    len_digits = length(string(digits))
+
+    #round and add 0 to fill the precision
+    digits = div(digits, big(10)^max(len_digits - n, 0), RoundNearest)
+    sdigits = string(digits)
+
+    exp = convert(Int, floor(log10(val)))
+    if length(sdigits) == n+1 #rounding caused the number to grow
+        return (exp+1, sdigits[1:end-1])
+    else
+        return (exp, sdigits * '0'^(n - length(sdigits)))
     end
+end
+
+"""
+get the first digits in base 10 representation of rounded `val` such that the
+fractional part has `n` digits and calculate largest power of 10 that is less
+or equal to the rounded number
+"""
+function getnfractionaldigits(val, n)
+    r = Rational{BigInt}(val)
 
     exp = convert(Int, floor(log10(val)))
     power = convert(Int, floor(log2(r.den)))
@@ -137,19 +175,21 @@ function getndigits(val, ndigits, keep_rounded::Bool)
     digits = r.num*big(5)^power
 
     len_digits = length(string(digits))
+    ndigits_to_remove = len_digits - (n + exp + 1)
 
     #round and add 0 to fill the precision
-    digits = div(digits, big(10)^max(len_digits - ndigits, 0), RoundNearest)
+    digits = div(digits, big(10)^max(ndigits_to_remove, 0), RoundNearest)
+
+    if digits == 0
+        return (-(n + 1), "")
+    end
+
     sdigits = string(digits)
 
-    if length(sdigits) == ndigits+1
-        @assert sdigits[end] == '0'
-        if keep_rounded
-            return (true, sdigits)
-        else
-            return (true, sdigits[1:end-1])
-        end
+    if length(sdigits) == len_digits - ndigits_to_remove + 1
+        # rounding caused an extra digit so we need to show one extra digit
+        (exp + 1, sdigits * '0'^(n + exp + 2 - length(sdigits)))
     else
-        return (false, sdigits * '0'^(ndigits - length(sdigits)))
+        (exp    , sdigits * '0'^(n + exp + 1 - length(sdigits)))
     end
 end
