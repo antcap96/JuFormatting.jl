@@ -1,6 +1,6 @@
 function sci(val, precision, capitals::Bool)
     if isinf(val) || isnan(val)
-        format_inf_nan(val, capitals)
+        return format_inf_nan(val, capitals)
     end
 
     # Calculate the exponent

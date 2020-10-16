@@ -161,7 +161,7 @@ function spec_format(fmt::FormatSpecNumber, x::Number)
 end
 
 function separate_sign(x)
-    signbit(x) ?
+    x < 0 ?
         ("-", -x) :
         ("+",  x)
 end
@@ -198,7 +198,11 @@ function format_number(number, precision, type, hash::Bool)
     elseif type == T_G
         return generalformat(number, fprecision, true)
     elseif type == T_float
-        return generalformat(number, fprecision, false, true)
+        if precision == -1
+            return string(number) #when no precision is given print the default formatting
+        else
+            return generalformat(number, fprecision, false, true)
+        end
     end
     # integer representations
     if precision != -1

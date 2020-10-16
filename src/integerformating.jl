@@ -28,7 +28,8 @@ function _ndigits(x::Integer, op)  # suppose x is non-negative
 end
 
 _ipre(op) = ""
-_ipre(::Union{_Hex, _HEX}) = "0x"
+_ipre(::_Hex) = "0x"
+_ipre(::_HEX) = "0X"
 _ipre(::_Oct) = "0o"
 _ipre(::_Bin) = "0b"
 
