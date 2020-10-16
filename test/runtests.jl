@@ -12,6 +12,18 @@ function test(str, args)
     return result
 end
 
+macro testmacrothrows(typ,expr)
+    quote
+       @test_throws $typ begin
+          try
+             eval(:($expr))
+          catch e
+             rethrow(e.error)
+          end
+       end
+    end
+ end
+
 @testset "JuFormatting.jl" begin
     # Write your tests here.
     @test test("{:3} {:.5g}", Any[1, .34])
@@ -55,6 +67,12 @@ end
     @test test("{:e} "^10, exp10.(rand(10)*10))
     @test test("{:f} "^10, exp10.(rand(10)*10))
     @test test("{:g} "^10, exp10.(rand(10)*10))
+
+    # test errors
+    @testmacrothrows ErrorException f"{}"
+    @testmacrothrows ErrorException f"{{}"
+    @test_throws ErrorException format("{:.1x}", 3)
+    @test_throws ErrorException format("{::}", 1.2)
 
 
 end

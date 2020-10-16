@@ -23,12 +23,13 @@ function format(str::AbstractString, args...; kwargs...)
     finalstr = ""
 
     for (i,formatstr) in enumerate(formatstrs)
-        temp = split(formatstr, ":")
-        var = temp[1]
-        if length(temp) > 1
-            fmtstr = temp[2]
-        else
+        idx = findfirst(':', formatstr)
+        if idx === nothing
+            var = formatstr
             fmtstr = ""
+        else
+            var = formatstr[1:(idx-1)]
+            fmtstr = formatstr[(idx+1):end]
         end
         formated =
             if isempty(var)
