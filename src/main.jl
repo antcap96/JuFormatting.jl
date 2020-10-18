@@ -5,15 +5,15 @@ format `str` with `args`
 """
 function format(str::AbstractString, args...; kwargs...)
     inbetweens = String[]
-    formatstrs = String[]
-    formatstr = ""
+    fields = String[]
+    field = ""
     nextidx = 1
-    while formatstr !== nothing
-        nextidx, inbetween, formatstr = iterate_braces_pair(str, nextidx)
+    while field !== nothing
+        nextidx, inbetween, field = iterate_braces_pair(str, nextidx)
 
         push!(inbetweens, inbetween)
-        if formatstr !== nothing
-            push!(formatstrs, formatstr)
+        if field !== nothing
+            push!(fields, field)
         end
     end
 
@@ -22,22 +22,22 @@ function format(str::AbstractString, args...; kwargs...)
 
     finalstr = ""
 
-    for (i,formatstr) in enumerate(formatstrs)
-        idx = findfirst(':', formatstr)
+    for (i, field) in enumerate(fields)
+        idx = findfirst(':', field)
         if idx === nothing
-            var = formatstr
-            fmtstr = ""
+            field_name = field
+            specifier = ""
         else
-            var = formatstr[1:(idx-1)]
-            fmtstr = formatstr[(idx+1):end]
+            field_name = field[1:(idx-1)]
+            specifier = field[(idx+1):end]
         end
         formated =
-            if isempty(var)
-                fmt(fmtstr, args[i])
-            elseif isdigit(var[1])
-                fmt(fmtstr, args[parse(Int,var)])
+            if isempty(field_name)
+                fmt(specifier, args[i])
+            elseif isdigit(field_name[1])
+                fmt(specifier, args[parse(Int,field_name)])
             else
-                fmt(fmtstr, kwargs[Symbol(var)])
+                fmt(specifier, kwargs[Symbol(field_name)])
             end
         finalstr *= inbetweens[i] * formated
     end
@@ -55,18 +55,18 @@ function iterate_braces_pair(str, start)
     while i <= lastindex(str)
         if str[i] == '}'
             if i == lastindex(str)
-                error("single '}' is not allowed at idx $i")
+                error("single '}' is not allowed at idx $i in string \"$str\"")
             elseif str[i+1] == '}'
                 i = nextind(str, i+1)
                 continue
             else
-                error("single '}' is not allowed at idx $i")
+                error("single '}' is not allowed at idx $i in string \"$str\"")
             end
         end
 
         if str[i] == '{'
             if i == lastindex(str)
-                error("single '{' is not allowed at idx $i")
+                error("single '{' is not allowed at idx $i in string \"$str\"")
             elseif str[i+1] == '{'
                 i = nextind(str, i+1)
                 continue
