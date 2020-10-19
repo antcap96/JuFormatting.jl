@@ -184,15 +184,15 @@ function format_number(number, precision, type, hash::Bool)
     # floating point representations
     fprecision = precision >= 0 ? precision : 6
     if type == T_e
-        return sci(number, fprecision, false)
+        return Ryu.writeexp(number, fprecision)
     elseif type == T_E
-        return sci(number, fprecision, true)
+        return uppercase(Ryu.writeexp(number, fprecision, false, false, false, UInt8('E')))
     elseif type == T_f
-        return floatingpoint(number, fprecision, false)
+        return Ryu.writefixed(number, fprecision)
     elseif type == T_F
-        return floatingpoint(number, fprecision, true)
+        return uppercase(Ryu.writefixed(number, fprecision))
     elseif type == T_percent
-        return floatingpoint(number*100, fprecision, false) * "%"
+        return Ryu.writefixed(number*100, fprecision) * "%"
     elseif type == T_g
         return generalformat(number, fprecision, false)
     elseif type == T_G
@@ -252,3 +252,8 @@ function combine(sign::AbstractString,
         return sign * (fill ^ fill_len) * number
     end
 end
+
+# sci -> Ryu.writeexp
+# floatingpoint -> Ryu.writefixed
+# generalformat -> Ryu.shortest
+# StringVector to create a UInt8 vector

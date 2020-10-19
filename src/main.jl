@@ -98,7 +98,7 @@ function iterate_braces_pair(str, start)
         error("braces missmatch: \"$(str[i:end])\" at idx $i")
     end
     (
-        j+1, 
+        j+1,
         replace(replace(str[start:(i-1)], "{{"=>"{"), "}}" => "}"),
         found ? str[i+1:j-1] : nothing
     )

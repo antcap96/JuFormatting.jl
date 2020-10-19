@@ -1,5 +1,7 @@
 module JuFormatting
 
+using Base.Ryu
+
 # Write your package code here.
 
 export
