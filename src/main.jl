@@ -13,6 +13,7 @@ function format(str::AbstractString, args...; kwargs...)
 
         push!(inbetweens, inbetween)
         if field !== nothing
+            push!(inbetweens, "")
             push!(fields, field)
         end
     end
@@ -39,9 +40,9 @@ function format(str::AbstractString, args...; kwargs...)
             else
                 fmt(specifier, kwargs[Symbol(field_name)])
             end
-        finalstr *= inbetweens[i] * formated
+        inbetweens[2i] = formated
     end
-    finalstr * inbetweens[end]
+    string(inbetweens...)
 end
 
 
