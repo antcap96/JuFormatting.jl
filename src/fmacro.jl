@@ -22,7 +22,7 @@ macro f_str(str)
         end
     end
 
-    parsed_args = Meta.parse.(arguments)
+    parsed_args = esc.(Meta.parse.(arguments))
 
     :(fstr_combine($inbetweens, $formatstrs, $(parsed_args...)))
 end
