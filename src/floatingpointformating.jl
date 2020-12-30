@@ -1,11 +1,11 @@
 
-function generalformat(val, precision::Integer, capitals::Bool, min_digits::Bool=false)
+function generalformat(val, precision::Integer, capitals::Bool, force_separator::Bool=false)
     if isinf(val) || isnan(val)
         return format_inf_nan(val, capitals)
     end
 
     if val == 0
-        if min_digits
+        if force_separator
             return "0.0"
         else
             return "0"
@@ -23,11 +23,11 @@ function generalformat(val, precision::Integer, capitals::Bool, min_digits::Bool
     exp = parse(Int, split(number, uintexponent)[2])
 
     exponent = ""
-    if exp >= precision - (min_digits ? 1 : 0) || exp <= -5
+    if exp >= precision - (force_separator ? 1 : 0) || exp <= -5
         i = findfirst(uintexponent, number)
         number, exponent = number[1:i-1], number[i:end]
     else
-        fractional_digits = max(precision-exp-1, min_digits ? 1 : 0)
+        fractional_digits = max(precision-exp-1, force_separator ? 1 : 0)
 
         number = (capitals ? uppercase : identity)(Ryu.writefixed(val, fractional_digits))
     end
@@ -37,7 +37,7 @@ function generalformat(val, precision::Integer, capitals::Bool, min_digits::Bool
     end
 
     if number[end] == '.'
-        if min_digits
+        if force_separator
             number *= '0'
         else
             number =  number[1:end-1]

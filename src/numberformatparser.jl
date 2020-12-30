@@ -65,48 +65,30 @@ struct FormatSpecNumber
     type::FormatType
 end
 
-"""
-fmt(fmtstr, x)
 
-return `x` formated according to `fmtstr`
+parse_fmt_spec(fmt_spec::String, ::T) where {T<:Integer} = parse_fmt_number(fmt_spec, T_d, "bcdoxXneEfFgGn%", T)
+parse_fmt_spec(fmt_spec::String, ::T) where {T<:AbstractFloat} = parse_fmt_number(fmt_spec, T_float, "neEfFgGn%", T)
 
-This function is called by format and can be overloaded to add suport for diferent types
-"""
-function fmt end
-
-fmt(fmtstr::AbstractString, x::Union{Integer, AbstractFloat}) = spec_format(parse_format(fmtstr, x), x)
-fmt(fmtstr::AbstractString, x) = string(x)
-
-"""
-    parse_format(fmtstr, x)
-
-    parse the `fmtstr` for the type of `x`
-"""
-function parse_format end
-
-parse_format(fmtstr::AbstractString, ::T) where {T<:Integer} = parse_format_number(fmtstr, T_d, "bcdoxXneEfFgGn%", T)
-parse_format(fmtstr::AbstractString, ::T) where {T<:AbstractFloat} = parse_format_number(fmtstr, T_float, "neEfFgGn%", T)
-
-function parse_format_number(fmtstr::AbstractString, defaulttype::FormatType, validtypes::String, type)
+function parse_fmt_number(fmt_spec::String, defaulttype::FormatType, validtypes::String, value_type)
     rgx = r"((?<fill>.?)(?<align>[<>=^]))?(?<sign>[+\- ]?)(?<hash>#?)(?<zero>0?)(?<width>[0-9]*)(?<precision>\.[0-9]+)?(?<type>.?)"
 
-    m = match(rgx, fmtstr)
+    m = match(rgx, fmt_spec)
 
     #error handling
     if m === nothing
-        error("format \"$fmtstr\" is not understood")
+        error("format \"$fmt_spec\" is not understood")
     end
 
     if(m.offset != 1)
-        error("\"$(fmtstr)\" is not understood")
+        error("\"$(fmt_spec)\" is not understood")
     end
 
     if(!occursin(m.captures[9], validtypes))
-        error("unkown type: \"$(m.captures[9])\" for $type")
+        error("unkown type: \"$(m.captures[9])\" for $value_type")
     end
 
-    if(length(m.match) != length(fmtstr))
-        error("\"$(fmtstr[(length(m.match)+1):end])\" is not understood at idx $(length(m.match) + 1)")
+    if(length(m.match) != length(fmt_spec))
+        error("\"$(fmt_spec[(length(m.match)+1):end])\" is not understood at idx $(length(m.match) + 1)")
     end
 
     # Get parameters
@@ -129,8 +111,6 @@ function parse_format_number(fmtstr::AbstractString, defaulttype::FormatType, va
     end
     if m.captures[8] === nothing
         precision = -1
-    elseif m.captures[8] == "."
-        error("format specifier missing precision: \"$fmtstr\" ")
     else
         precision = parse(Int, m.captures[8][2:end])
     end
@@ -138,6 +118,11 @@ function parse_format_number(fmtstr::AbstractString, defaulttype::FormatType, va
         type = defaulttype
     else
         type = typemap[m.captures[9]]
+    end
+
+    # Error checking
+    if value_type <: Integer && precision != -1 && occursin(m.captures[9], "bcdoxXn")
+        error("precision not allowed in integer format specifier")
     end
 
     FormatSpecNumber(
@@ -151,7 +136,7 @@ function parse_format_number(fmtstr::AbstractString, defaulttype::FormatType, va
     )
 end
 
-function spec_format(fmt::FormatSpecNumber, x::Number)
+function fmt(fmt::FormatSpecNumber, x::Number)
     sign, number = separate_sign(x)
 
     sign   = format_sign(sign, fmt.sign)
@@ -180,33 +165,13 @@ function format_sign(sign, signfmt)
     end
 end
 
-function format_number(number, precision, type, hash::Bool)
-    # floating point representations
-    fprecision = precision >= 0 ? precision : 6
-    if type == T_e
-        return Ryu.writeexp(number, fprecision)
-    elseif type == T_E
-        return uppercase(Ryu.writeexp(number, fprecision, false, false, false, UInt8('E')))
-    elseif type == T_f
-        return Ryu.writefixed(number, fprecision)
-    elseif type == T_F
-        return uppercase(Ryu.writefixed(number, fprecision))
-    elseif type == T_percent
-        return Ryu.writefixed(number*100, fprecision) * "%"
-    elseif type == T_g
-        return generalformat(number, fprecision, false)
-    elseif type == T_G
-        return generalformat(number, fprecision, true)
-    elseif type == T_float
-        if precision == -1
-            return string(number) #when no precision is given print the default formatting
-        else
-            return generalformat(number, fprecision, false, true)
-        end
-    end
-    # integer representations
-    if precision != -1
-        error("precision not allowed in integer format specifier")
+function needs_conversion(type)
+    type in Set([T_e, T_E, T_f, T_F, T_g, T_G, T_percent])
+end
+
+function format_number(number::Integer, precision, type, hash::Bool)
+    if needs_conversion(type)
+        return format_number(convert(Float64, number), precision, type, hash)
     end
     if type == T_b
         return format_integer(number, _Bin(), hash)
@@ -219,7 +184,34 @@ function format_number(number, precision, type, hash::Bool)
     elseif type == T_X
         return format_integer(number, _HEX(), hash)
     elseif type == T_c
-        return format_char(number)
+        return convert(Char, number)
+    end
+end
+
+function format_number(number::AbstractFloat, precision, type, hash::Bool)
+    # floating point representations
+    no_precision = precision == -1
+    precision = no_precision ? 6 : precision
+    if type == T_e
+        return Ryu.writeexp(number, precision)
+    elseif type == T_E
+        return uppercase(Ryu.writeexp(number, precision, false, false, false, UInt8('E')))
+    elseif type == T_f
+        return Ryu.writefixed(number, precision)
+    elseif type == T_F
+        return uppercase(Ryu.writefixed(number, precision))
+    elseif type == T_percent
+        return Ryu.writefixed(number*100, precision) * "%"
+    elseif type == T_g
+        return generalformat(number, precision, false)
+    elseif type == T_G
+        return generalformat(number, precision, true)
+    elseif type == T_float
+        if no_precision
+            return string(number) #when no precision is given print the default formatting
+        else
+            return generalformat(number, precision, false, true)
+        end
     end
     string(number)
 end
@@ -230,8 +222,8 @@ combine(sign, number, fill, width, align)
 creates a string with `sign` and `number` of size `width` (or more if number
 is too big) using `fill` as padding according to `signtype` and `align`
 """
-function combine(sign::AbstractString,
-                 number::AbstractString,
+function combine(sign::String,
+                 number::String,
                  fill::Char,
                  width::Integer,
                  align::Align)
@@ -252,8 +244,3 @@ function combine(sign::AbstractString,
         return sign * (fill ^ fill_len) * number
     end
 end
-
-# sci -> Ryu.writeexp
-# floatingpoint -> Ryu.writefixed
-# generalformat -> Ryu.shortest
-# StringVector to create a UInt8 vector
