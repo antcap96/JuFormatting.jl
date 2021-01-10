@@ -3,7 +3,7 @@ format(str::AbstractString, args...) -> String
 
 format `str` with `args`
 """
-function format(str::AbstractString, args...; kwargs...)
+function format(str::AbstractString, args...)
     inbetweens = String[]
     fields = String[]
     field = ""
@@ -38,7 +38,7 @@ function format(str::AbstractString, args...; kwargs...)
             elseif isdigit(field_name[1])
                 fmt(specifier, args[parse(Int,field_name)])
             else
-                fmt(specifier, kwargs[Symbol(field_name)])
+                error("keyword arguments not allowed")
             end
         inbetweens[2i] = formated
     end
