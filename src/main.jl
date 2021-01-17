@@ -4,65 +4,59 @@
 format `str` with `args`
 """
 function format(str::AbstractString, args...)
-    inbetweens = String[]
-    fields = String[]
-    field = ""
-    nextidx = 1
-    while field !== nothing
-        nextidx, inbetween, field = iterate_braces_pair(str, nextidx)
-
-        push!(inbetweens, inbetween)
-        if field !== nothing
-            push!(fields, field)
-        end
-    end
-
     # TODO: do replacements in fmtstr
     # getattr and getindex
+    
+    inbetweens, field_names, fmt_specs = parse_original_string(str)
 
     arg_idxs = Int[]
-    fmt_specs = String[]
 
-    automatic_numbering = false
-    manual_numbering = false
-
-    for (i, field) in enumerate(fields)
-        idx = findfirst(':', field)
-        if idx === nothing
-            field_name = field
-            fmt_spec = ""
-        else
-            field_name = field[1:(idx - 1)]
-            fmt_spec = field[(idx + 1):end]
-        end
-
-        push!(fmt_specs, fmt_spec)
-
-        if isempty(field_name)
-            manual_numbering && error("cannot switch from manual field specification to automatic field numbering")
-            automatic_numbering = true
-            push!(arg_idxs, i)
-        else
-            automatic_numbering && error("cannot switch from manual field specification to automatic field numbering")
-            manual_numbering = true
+    if isempty(field_names) || isempty(field_names[1]) # automatic numbering
+        all(map(isempty, field_names)) || error("cannot switch from manual field specification to automatic field numbering")
+        arg_idxs = collect(1:length(field_names))
+    else # manual numbering
+        for field_name in field_names
+            isempty(field_name) && error("cannot switch from manual field specification to automatic field numbering")
             push!(arg_idxs, parse(Int, field_name))
         end
     end
-    
+
     ordered_args = args[arg_idxs]
 
-    replacement_fields = tuple([(parse_fmt_spec(fmt_specs[i], arg), arg) for (i, arg) in enumerate(ordered_args)]...)
+    parsed_fmt_specs = tuple((parse_fmt_spec(fmt_specs[i], arg) for (i, arg) in enumerate(ordered_args))...)
 
-    combine(inbetweens, replacement_fields)
+    combine(inbetweens, parsed_fmt_specs, ordered_args)
 end
 
+function parse_original_string(str::AbstractString)
+    inbetweens = String[]
+    fmt_specs = String[]
+    field_names = String[]
+    field = ""
+    nextidx = 1
+    while field !== nothing
+        nextidx, inbetween, field = iterate_brackets_pair(str, nextidx)
+
+        push!(inbetweens, inbetween)
+
+        if field !== nothing
+            temp = split(field, ':', limit=2)
+            field_name = temp[1]
+            fmt_spec = length(temp) == 2 ? temp[2] : ""
+
+            push!(field_names, field_name)
+            push!(fmt_specs, fmt_spec)
+        end
+    end
+    (inbetweens, field_names, fmt_specs)
+end
 
 """
-`iterate_braces_pair(str, start)`
+`iterate_brackets_pair(str, start)`
 
 return end of analysed string, in-between string and the format string
 """
-function iterate_braces_pair(str, start)
+function iterate_brackets_pair(str, start)
     i = start
     while i <= lastindex(str)
         if str[i] == '}'
@@ -111,8 +105,8 @@ function iterate_braces_pair(str, start)
     end
     (
         j + 1,
-        replace(replace(str[start:(i - 1)], "{{" => "{"), "}}" => "}"),
-        found ? str[i + 1:j - 1] : nothing
+        replace(replace(str[start:prevind(str, i)], "{{" => "{"), "}}" => "}"),
+        found ? str[i + 1:prevind(str,j)] : nothing
     )
 end
 
@@ -141,9 +135,9 @@ fmt(fmt_spec, x) = string(x)
 """
 
 """
-function combine(inbetweens, replacement_fields)
+function combine(inbetweens, fmt_specs, args)
     result = ""
-    for (i,(fmt_spec, arg)) in enumerate(replacement_fields)
+    for (i,(fmt_spec, arg)) in enumerate(zip(fmt_specs, args))
         result *= inbetweens[i] * fmt(fmt_spec, arg)
     end
     result * inbetweens[end]

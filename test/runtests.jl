@@ -14,15 +14,15 @@ end
 
 macro testmacrothrows(typ,expr)
     quote
-       @test_throws $typ begin
-          try
-             eval(:($expr))
-          catch e
-             rethrow(e.error)
-          end
-       end
+        @test_throws $typ begin
+            try
+                eval(:($expr))
+            catch e
+                rethrow(e.error)
+            end
+        end
     end
- end
+end
 
 @testset "JuFormatting.jl" begin
     # Write your tests here.
@@ -67,6 +67,10 @@ macro testmacrothrows(typ,expr)
     @test test("{:e} "^10, exp10.(rand(10)*10))
     @test test("{:f} "^10, exp10.(rand(10)*10))
     @test test("{:g} "^10, exp10.(rand(10)*10))
+
+    # test codeunits with more than 1 byte
+    @test test("ã{}", rand())
+    @test test("ã{}"^10, rand(10))
 
     # test errors
     @testmacrothrows ErrorException f"{}"
