@@ -60,15 +60,14 @@ the format string or nothing if no brackets have been found
 """
 function iterate_brackets_pair(str, start)
     i = start
+    found = false
     while i <= lastindex(str)
         if str[i] == '}'
-            if i == lastindex(str)
+            if i == lastindex(str) || str[i + 1] != '}'
                 error("single '}' is not allowed at idx $i in string \"$str\"")
-            elseif str[i + 1] == '}'
+            else
                 i = nextind(str, i + 1)
                 continue
-            else
-                error("single '}' is not allowed at idx $i in string \"$str\"")
             end
         end
 
@@ -79,6 +78,7 @@ function iterate_brackets_pair(str, start)
                 i = nextind(str, i + 1)
                 continue
             else
+                found = true
                 break
             end
         end
@@ -99,8 +99,6 @@ function iterate_brackets_pair(str, start)
         end
         j = nextind(str, j)
     end
-
-    found = i <= lastindex(str) && str[i] == '{'
 
     if count != 0 && found
         error("braces missmatch: \"$(str[i:end])\" at idx $i")
@@ -132,8 +130,6 @@ Defaults to calling string on the object.
 """
 fmt(fmt_spec, x) = string(x)
 
-
-using Unrolled
 
 # TODO: look at unrolled.jl for performance?
 """
