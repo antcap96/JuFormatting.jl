@@ -6,7 +6,7 @@ format `str` with `args`
 function format(str::AbstractString, args...)
     # TODO: do replacements in fmtstr
     # getattr and getindex
-    
+
     inbetweens, field_names, fmt_specs = parse_original_string(str)
 
     arg_idxs = Int[]
@@ -52,9 +52,11 @@ function parse_original_string(str::AbstractString)
 end
 
 """
-`iterate_brackets_pair(str, start)`
+`iterate_brackets_pair(str, start) -> (nextidx, inbetween, field)`
 
-return end of analysed string, in-between string and the format string
+return index up to where `str` has been analysed,
+in-between string,
+the format string or nothing if no brackets have been found
 """
 function iterate_brackets_pair(str, start)
     i = start
@@ -114,7 +116,7 @@ end
 """
 `parse_fmt_spec(fmt_spec::String, arg)`
 
-parse the format specifier. This can be done at compile time in @f_str
+parse the format specifier.
 """
 parse_fmt_spec(fmt_spec::String, arg) = fmt_spec
 
@@ -131,14 +133,16 @@ Defaults to calling string on the object.
 fmt(fmt_spec, x) = string(x)
 
 
+using Unrolled
+
 # TODO: look at unrolled.jl for performance?
 """
 
 """
 function combine(inbetweens, fmt_specs, args)
     result = ""
-    for (i,(fmt_spec, arg)) in enumerate(zip(fmt_specs, args))
-        result *= inbetweens[i] * fmt(fmt_spec, arg)
+    for (inbetween, fmt_spec, arg) in zip(inbetweens, fmt_specs, args)
+        result *= inbetween * fmt(fmt_spec, arg)
     end
     result * inbetweens[end]
 end

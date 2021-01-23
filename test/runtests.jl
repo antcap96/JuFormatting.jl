@@ -78,5 +78,4 @@ end
     @test_throws ErrorException format("{:.1x}", 3)
     @test_throws ErrorException format("{::}", 1.2)
 
-
 end
