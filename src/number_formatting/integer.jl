@@ -31,8 +31,6 @@ _digitchar(x::Integer, ::_HEX) = UInt8(x < 10 ? '0' + x : 'A' + (x - 10))
 
 
 function format_integer(val, base, has_prefix::Bool)
-    prefix = has_prefix ? _prefix(base) : UInt8[]
-
     # find largest power that fits in `val`, subtract it from `val`
     # repeat the process until `val` is 0
 
@@ -44,16 +42,19 @@ function format_integer(val, base, has_prefix::Bool)
         digits += 1
     end
 
-    prefix_len = length(prefix)
-    arr = Vector{UInt8}(undef, digits + prefix_len)
-    arr[1:prefix_len] = prefix
-    i = 1 + prefix_len
+    prefix = has_prefix ? _prefix(base) : UInt8[]
+
+    result = Vector{UInt8}(undef, digits + length(prefix))
+    result[1:length(prefix)] = prefix
+
+    i = 1 + length(prefix)
+
     remainder = val
     while power > 0
         (quotient, remainder) = divrem(remainder, power)
-        arr[i] = _digitchar(quotient, base)
+        result[i] = _digitchar(quotient, base)
         i += 1
         power = _div(power, base)
     end
-    return String(arr)
+    return String(result)
 end
