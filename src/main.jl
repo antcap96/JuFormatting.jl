@@ -54,8 +54,9 @@ end
 """
 `iterate_brackets_pair(str, start) -> (nextidx, inbetween, field)`
 
-return index up to where `str` has been analysed,
-in-between string,
+return a tuple with:
+index up to where `str` has been analysed,
+substring from `start` to the begining of the replacement field,
 the format string or nothing if no brackets have been found
 """
 function iterate_brackets_pair(str, start)

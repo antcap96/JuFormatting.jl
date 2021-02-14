@@ -1,6 +1,7 @@
 using JuFormatting
 using PyCall
 using Test
+import JuFormatting: _HEX, _Hex, _Dec, _Oct, _Bin
 
 function test(str, args)
     result = (format(str, args...) == PyObject(str).format(args...))
@@ -24,11 +25,22 @@ macro testmacrothrows(typ,expr)
     end
 end
 
-@testset "JuFormatting.jl" begin
+@testset "Integer formatting" begin
+    format_types = [_HEX, _Hex, _Dec, _Oct, _Bin]
+    format_spec = ["X", "x", "", "o", "b"]
+    @testset "format type $type" for (type, fmt) in zip(format_types, format_spec)
+        for x in [0, 5, 15, 101, 123456]
+            @test JuFormatting.format_integer(x, type(), false) == PyObject(x).__format__(fmt)
+            @test JuFormatting.format_integer(x, type(), true) == PyObject(x).__format__("#"*fmt)
+        end
+    end
+end
+
+@testset "complete tests" begin
     # Write your tests here.
     @test test("{:3} {:.5g}", Any[1, .34])
     @test test("{:.3G} {:F} {:4.1E} {:.100g} {:5f} {:6.3e} {:%} {}", rand(8))
-    
+
     # edge cases
     #   fails because julia formats Inf and NaN different from python
     #   @test test("{:f} {:g} {:e} {} {:f} {:g} {:e} {}", [Inf, Inf, Inf, Inf, NaN, NaN, NaN, NaN])
@@ -77,5 +89,4 @@ end
     @testmacrothrows ErrorException f"{{}"
     @test_throws ErrorException format("{:.1x}", 3)
     @test_throws ErrorException format("{::}", 1.2)
-
 end

@@ -9,9 +9,9 @@ export
     @f_str
 
 include("main.jl")
-include("numberformatparser.jl")
-include("floatingpointformating.jl")
-include("integerformating.jl")
+include("number_formatting/general.jl")
+include("number_formatting/floatingpoint.jl")
+include("number_formatting/integer.jl")
 include("fmacro.jl")
 
 end
